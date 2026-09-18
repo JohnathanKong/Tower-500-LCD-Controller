@@ -105,6 +105,25 @@ def _centered_text(draw: ImageDraw.ImageDraw, text: str, y: int, face: ImageFont
     draw.text((x, y), text, font=face, fill=color, stroke_width=2, stroke_fill="black")
 
 
+def _gauge_cards(image: Image.Image, boxes: tuple[tuple[int, int, int, int], ...], values: tuple[float | None, ...], accent: str) -> Image.Image:
+    """Put each reading on a separate translucent card with a bottom-open 270° gauge."""
+    overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    accent_rgb = ImageColor.getrgb(accent)
+    for (left, top, right, bottom), value in zip(boxes, values):
+        draw.rounded_rectangle((left, top, right, bottom), radius=16, fill=(5, 12, 20, 177))
+        center_x = (left + right) / 2
+        center_y = (top + bottom) / 2
+        radius = min(right - left - 8, bottom - top - 8) / 2
+        circle = (round(center_x - radius), round(center_y - radius), round(center_x + radius), round(center_y + radius))
+        # Pillow angles run clockwise from the right: 135° to 405° leaves the bottom open.
+        draw.arc(circle, start=135, end=405, fill=(255, 255, 255, 155), width=4)
+        if value is not None and value > 0:
+            progress_end = 135 + 270 * min(value, 100) / 100
+            draw.arc(circle, start=135, end=progress_end, fill=(*accent_rgb, 255), width=5)
+    return Image.alpha_composite(image.convert("RGBA"), overlay).convert("RGB")
+
+
 def dashboard(accent: str, text_color: str = "#F2F7FA", muted_color: str = "#95ADBE", rotation: int = 0, background: Image.Image | None = None, gpu_usage: float | None = None, cpu_usage: float | None = None) -> Image.Image:
     """Render one complete frame; the USB loop calls this for every refresh."""
     now = datetime.now()
@@ -116,38 +135,28 @@ def dashboard(accent: str, text_color: str = "#F2F7FA", muted_color: str = "#95A
     if image.size != (w, h):
         raise ValueError(f"Background must be {w}x{h} before rotation")
     portrait = rotation in (90, 270)
-    d = ImageDraw.Draw(image)
     if background is None:
-        d.rounded_rectangle((2, 2, w - 3, h - 3), radius=15, outline="#254356", width=2)
+        ImageDraw.Draw(image).rounded_rectangle((2, 2, w - 3, h - 3), radius=15, outline="#254356", width=2)
     if portrait:
-        # The clock and all three values share one font and the full panel width.
+        # Three cards have 22-pixel gaps below the clock.
+        cards = ((5, 84, 123, 196), (5, 218, 123, 330), (5, 352, 123, 464))
+        image = _gauge_cards(image, cards, (cpu, gpu_usage, memory), accent)
+        d = ImageDraw.Draw(image)
         value_font = font(34, True)
         _centered_text(d, now.strftime("%I:%M").lstrip("0"), 20, value_font, text_color, 8, w - 8)
-        for y, (label, value) in zip((92, 214, 336), readings):
-            _centered_text(d, label, y, font(16, True), "#FFFFFF", 8, w - 8)
-            _centered_text(d, f"{value:0.0f}%" if value is not None else "N/A", y + 27, value_font, text_color, 8, w - 8)
-            d.rounded_rectangle((17, y + 79, w - 18, y + 87), radius=4, fill="#234052")
-            if value is None:
-                continue
-            end = 17 + round((w - 35) * min(max(value, 0), 100) / 100)
-            if end > 17:
-                d.rounded_rectangle((17, y + 79, end, y + 87), radius=4, fill=accent)
+        for (left, top, right, _), (label, value) in zip(cards, readings):
+            _centered_text(d, label, top + 24, font(16, True), "#FFFFFF", left + 5, right - 5)
+            _centered_text(d, f"{value:0.0f}%" if value is not None else "N/A", top + 53, value_font, text_color, left + 5, right - 5)
     else:
-        # Four columns fit the clock and three equally sized load readings.
-        value_font = font(34, True)
-        columns = ((5, 115), (125, 235), (245, 355), (365, 475))
-        for divider in (120, 240, 360):
-            d.line((divider, 14, divider, 112), fill="#254356", width=2)
-        _centered_text(d, now.strftime("%I:%M").lstrip("0"), 20, value_font, text_color, *columns[0])
-        for (left, right), (label, value) in zip(columns[1:], readings):
-            _centered_text(d, label, 17, font(13, True), "#FFFFFF", left, right)
-            _centered_text(d, f"{value:0.0f}%" if value is not None else "N/A", 48, value_font, text_color, left, right)
-            d.rounded_rectangle((left + 8, 104, right - 8, 111), radius=3, fill="#234052")
-            if value is None:
-                continue
-            end = left + 8 + round((right - left - 16) * min(max(value, 0), 100) / 100)
-            if end > left + 8:
-                d.rounded_rectangle((left + 8, 104, end, 111), radius=3, fill=accent)
+        # Four columns fit the clock and three cards, with 8-pixel gaps.
+        cards = ((122, 5, 236, 123), (244, 5, 358, 123), (366, 5, 478, 123))
+        image = _gauge_cards(image, cards, (cpu, gpu_usage, memory), accent)
+        d = ImageDraw.Draw(image)
+        value_font = font(28, True)
+        _centered_text(d, now.strftime("%I:%M").lstrip("0"), 20, value_font, text_color, 5, 115)
+        for (left, top, right, _), (label, value) in zip(cards, readings):
+            _centered_text(d, label, top + 24, font(13, True), "#FFFFFF", left + 4, right - 4)
+            _centered_text(d, f"{value:0.0f}%" if value is not None else "N/A", top + 53, value_font, text_color, left + 4, right - 4)
     return _orient(image, rotation)
 
 
