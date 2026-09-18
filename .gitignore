@@ -23,3 +23,6 @@ Desktop.ini
 .build-work/
 .build-spec/
 .wheel-cache/
+
+# Local install folder copied into Program Files; never commit this duplicate.
+/Tower500LCD/
