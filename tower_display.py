@@ -148,7 +148,7 @@ def dashboard(accent: str, text_color: str = "#F2F7FA", muted_color: str = "#95A
     now = datetime.now()
     cpu = psutil.cpu_percent(interval=None) if cpu_usage is None else cpu_usage
     memory = psutil.virtual_memory().percent
-    readings = (("CPU LOAD", cpu), ("GPU LOAD", gpu_usage), ("RAM LOAD", memory))
+    readings = (("CPU", cpu), ("GPU", gpu_usage), ("RAM", memory))
     w, h = _logical_size(rotation)
     image = background.copy() if background is not None else Image.new("RGB", (w, h), "#071019")
     if image.size != (w, h):
@@ -164,7 +164,7 @@ def dashboard(accent: str, text_color: str = "#F2F7FA", muted_color: str = "#95A
         value_font = font(30, True)
         _centered_text(d, now.strftime("%I:%M").lstrip("0"), 20, value_font, text_color, 8, w - 8)
         for (left, top, right, _), (label, value) in zip(cards, readings):
-            _centered_text(d, label, top + 24, font(14, True), "#FFFFFF", left + 5, right - 5)
+            _centered_text(d, label, top + 24, font(18, True), "#FFFFFF", left + 5, right - 5)
             _centered_text(d, f"{value:0.0f}%" if value is not None else "N/A", top + 53, value_font, text_color, left + 5, right - 5)
     else:
         # Four columns fit the clock and three cards, with 8-pixel gaps.
@@ -174,7 +174,7 @@ def dashboard(accent: str, text_color: str = "#F2F7FA", muted_color: str = "#95A
         value_font = font(26, True)
         _centered_text(d, now.strftime("%I:%M").lstrip("0"), 20, value_font, text_color, 5, 115)
         for (left, top, right, _), (label, value) in zip(cards, readings):
-            _centered_text(d, label, top + 24, font(12, True), "#FFFFFF", left + 4, right - 4)
+            _centered_text(d, label, top + 24, font(16, True), "#FFFFFF", left + 4, right - 4)
             _centered_text(d, f"{value:0.0f}%" if value is not None else "N/A", top + 53, value_font, text_color, left + 4, right - 4)
     return _orient(image, rotation)
 
