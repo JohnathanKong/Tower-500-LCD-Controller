@@ -26,3 +26,4 @@ Desktop.ini
 
 # Local install folder copied into Program Files; never commit this duplicate.
 /Tower500LCD/
+/install/

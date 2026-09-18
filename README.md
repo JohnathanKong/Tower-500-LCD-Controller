@@ -2,7 +2,7 @@
 
 A small Windows controller for the Thermaltake Tower 500 3.9-inch LCD (USB `264A:233D`, 480 × 128 pixels). The live dashboard shows the time and CPU, GPU, and RAM utilization. The clock sits near the top with about 20 pixels of space; the date is omitted. Each reading sits on its own translucent rounded card, separated from the others. A thick, antialiased 270° circular gauge with rounded ends wraps the large CPU, GPU, or RAM title and percentage, opens at the bottom, and fills according to utilization. Titles are white. Text has a black outline so it remains readable over a background image.
 
-This folder is the application. Keep its files together in a permanent location, especially `bundle\TowerLCDDisplay.exe` and the entire `bundle\_internal` directory. The bundled executable includes Python and the libraries it needs; **running the app does not require Python or Codex to be installed**. It uses the existing Windows HID driver and the open-source USB transport from [Kraken LCD Studio](https://github.com/krakenunbound/kraken-lcd-studio). It does not install a driver or write firmware.
+The runnable app is the small folder created by `Create Install Folder.ps1`. Keep its files together, especially `bundle\TowerLCDDisplay.exe` and the entire `bundle\_internal` directory. The bundled executable includes Python and the libraries it needs; **running the app does not require Python or Codex to be installed**. It uses the existing Windows HID driver and the open-source USB transport from [Kraken LCD Studio](https://github.com/krakenunbound/kraken-lcd-studio). It does not install a driver or write firmware.
 
 ## Requirements on this computer
 
@@ -11,11 +11,27 @@ This folder is the application. Keep its files together in a permanent location,
 - NVIDIA's installed driver and `nvml.dll` for GPU Load. This computer has an NVIDIA GeForce RTX 5090 and AMD Radeon(TM) Graphics. The dashboard reads **NVIDIA GPU 0, the RTX 5090**, through NVML; it does not read the AMD GPU. Other monitor apps may report the AMD GPU or use different sampling and aggregation, so percentages can differ. If the NVIDIA driver cannot report utilization, the display shows `N/A`.
 - TT RGB Plus closed while this controller uses the LCD. Both programs cannot control the panel at once.
 
+## Create the install folder
+
+Run this from the Git project folder in PowerShell:
+
+```powershell
+& '.\Create Install Folder.ps1'
+```
+
+It creates an ignored `install` folder with only the standalone bundle, launchers, README, and license notices (about 30 MB). To choose another destination, pass an absolute path or a path relative to this project folder:
+
+```powershell
+& '.\Create Install Folder.ps1' -Destination 'D:\Apps\Tower500LCD'
+```
+
+The destination must be new or empty; the script will not delete or mix with existing files. It does not copy source code, build tools, logs, settings, or images. Your existing image library and settings remain in `%LOCALAPPDATA%\Tower500LCD`; on another computer, import an image in the control window. To refresh a package after changes, choose a new empty destination or remove the old generated folder yourself and rerun the script.
+
 ## First run
 
 1. Close TT RGB Plus, including its tray/background process.
 2. Double-click **`Open LCD App.cmd`** in this folder. This opens the control window; it is not the background display process.
-3. Click **Import image…** to copy a PNG, JPEG, BMP, or WebP into `%LOCALAPPDATA%\Tower500LCD\images`. Pick any imported image from the **Image library** dropdown. The saved selection uses the local copy, so deleting the original file will not break the dashboard. Images included in the app folder are copied into that library on launch. Live text is drawn over it on every refresh. The preview updates when you change the selection or settings and refreshes every two seconds while open; it does not access the LCD.
+3. Click **Import image…** to copy a PNG, JPEG, BMP, or WebP into `%LOCALAPPDATA%\Tower500LCD\images`. Pick any imported image from the **Image library** dropdown. The saved selection uses the local copy, so deleting the original file will not break the dashboard. Live text is drawn over it on every refresh. The preview updates when you change the selection or settings and refreshes every two seconds while open; it does not access the LCD.
 4. Set **Rotate** to match the physical panel direction. Rotation is clockwise: 0°, 90°, 180°, or 270°. Set **Image fit** to crop the image to fill the screen or show the whole image with bars.
 5. Optionally change the accent and main value text colors, refresh interval, and **Brightness** slider. Load titles stay white. The minimum refresh interval is 0.5 seconds; the default is 2 seconds. Brightness ranges from 0% (black image) to 100% (full image). It dims the transmitted pixels, not the LCD backlight, so 0% may still have backlight glow.
 6. Click **Start live dashboard**. Settings are saved in `%LOCALAPPDATA%\Tower500LCD\lcd-settings.json`. Close the control window when finished; the smaller display process keeps running.
@@ -35,7 +51,7 @@ First complete **First run** so the saved settings have the image, rotation, col
 
 The launcher briefly runs PowerShell, reads `lcd-settings.json`, stops any older display process from this app folder, starts one hidden `TowerLCDDisplay.exe` process, and exits. Running the launcher again replaces the old process; it will not leave two dashboards fighting for the USB panel. Opening the control window again also replaces its previous window. If TT RGB Plus is already running, the launcher stops this app's old process and skips starting a new one. No Startup shortcut is installed automatically. To disable automatic startup, delete the shortcut from the Startup folder.
 
-**Moving to Program Files:** copy the entire app folder to `C:\Program Files\Tower500LCD` (Windows may ask for administrator approval). Launch `Open LCD App.cmd` from the new location once, then replace the old Startup shortcut with a shortcut to the new `Start LCD at Login.cmd`. The app automatically copies existing settings and images from the app folder into `%LOCALAPPDATA%\Tower500LCD` on first launch. It writes settings, previews, PID records, and logs only there, so normal use does not need administrator rights. The `bundle` directory must move with the launchers. No Codex path or separate Python install is needed.
+**Moving to Program Files:** create the install folder above, then copy its contents to `C:\Program Files\Tower500LCD` (Windows may ask for administrator approval). Launch `Open LCD App.cmd` from the new location once, then replace the old Startup shortcut with a shortcut to the new `Start LCD at Login.cmd`. Settings, imported images, previews, PID records, and logs stay in `%LOCALAPPDATA%\Tower500LCD`, so normal use does not need administrator rights. The `bundle` directory must move with the launchers. No Codex path or separate Python install is needed.
 
 ## Run from PowerShell
 
@@ -81,16 +97,21 @@ If the screen does not update, check that TT RGB Plus is closed, the USB cable i
 
 On this computer, the standalone background process measured about **46 MB working memory** and **34 MB private memory** during the live test at a two-second refresh interval. The PowerShell control window used about **173 MB RAM while open** in an earlier test; closing it leaves only the smaller display process. Actual use varies with image and settings. The standalone files use about **30 MB on disk**.
 
-## Files and licensing
+## Which files to run
 
-- `Open LCD App.cmd` / `.ps1`: control window; saves settings and starts or stops the background process.
-- `Start LCD at Login.cmd` / `.ps1`: hidden, one-shot sign-in launcher using saved settings.
-- `Start Dashboard.ps1`: direct command-line launcher.
-- `AppState.ps1`: places changing app files under your user profile and migrates older settings and images.
-- `tower_display.py`: draws frames and runs the refresh loop.
-- `thermaltake_lcd.py`: USB transport copied from Kraken LCD Studio.
-- `bundle\TowerLCDDisplay.exe` and `bundle\_internal`: standalone Windows display process and its private runtime.
-- `Build Standalone.ps1`, `requirements-build.txt`, `hooks`, and `version-info.txt`: reproducible packaging inputs; these are needed only when rebuilding from source.
+| File | What it does |
+| --- | --- |
+| `Open LCD App.cmd` | **Double-click this** to open the control window. The window can close while the display keeps running. |
+| `Start LCD at Login.cmd` | Make a shortcut to this in the Windows Startup folder. It starts one hidden display process using saved settings, then exits. |
+| `Start Dashboard.ps1` | Optional manual command-line launcher. It stays in your PowerShell window until you stop it. |
+| `bundle\TowerLCDDisplay.exe` | The actual display program. The launchers call it; you normally do not open it directly. |
+| `Open LCD App.ps1`, `Start LCD at Login.ps1` | PowerShell code behind the two `.cmd` launchers. Keep these beside the `.cmd` files. |
+| `AppState.ps1` | Helper that keeps changing files in `%LOCALAPPDATA%\Tower500LCD`. Keep it with the launchers; do not run it directly. |
+| `bundle\_internal` | Private runtime and libraries required by the executable. Keep the complete directory; do not run files in it directly. |
+
+The Git project also contains `tower_display.py` (dashboard logic), `thermaltake_lcd.py` (USB transport), and bundled dependency source. These are **source files**, not needed in the generated install folder. `Create Install Folder.ps1` prepares that folder; `Build Standalone.ps1`, `requirements-build.txt`, `hooks`, and `version-info.txt` are for rebuilding the executable after source changes. Do not put the build tools in Program Files.
+
+## Licensing
 
 `thermaltake_lcd.py` is GPL-3.0-or-later; see `LICENSE-Kraken.txt`. `tower_display.py` is GPL-3.0-or-later so it can be shared with that transport. Bundled `pywinusb` and `psutil` are BSD-3-Clause; see their included notices. Python, Pillow, and PyInstaller license texts are in `LICENSE-Python.txt`, `LICENSE-Pillow.txt`, and `LICENSE-PyInstaller.txt`.
 
