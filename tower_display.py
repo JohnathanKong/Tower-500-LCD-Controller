@@ -107,20 +107,23 @@ def _centered_text(draw: ImageDraw.ImageDraw, text: str, y: int, face: ImageFont
 
 def _gauge_cards(image: Image.Image, boxes: tuple[tuple[int, int, int, int], ...], values: tuple[float | None, ...], accent: str) -> Image.Image:
     """Put each reading on a separate translucent card with a bottom-open 270° gauge."""
-    overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    # Draw at four times the panel resolution, then shrink for smooth arc edges.
+    scale = 4
+    overlay = Image.new("RGBA", (image.width * scale, image.height * scale), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
     accent_rgb = ImageColor.getrgb(accent)
     for (left, top, right, bottom), value in zip(boxes, values):
-        draw.rounded_rectangle((left, top, right, bottom), radius=16, fill=(5, 12, 20, 177))
+        draw.rounded_rectangle((left * scale, top * scale, right * scale, bottom * scale), radius=16 * scale, fill=(5, 12, 20, 177))
         center_x = (left + right) / 2
         center_y = (top + bottom) / 2
         radius = min(right - left - 8, bottom - top - 8) / 2
-        circle = (round(center_x - radius), round(center_y - radius), round(center_x + radius), round(center_y + radius))
+        circle = tuple(round(coordinate * scale) for coordinate in (center_x - radius, center_y - radius, center_x + radius, center_y + radius))
         # Pillow angles run clockwise from the right: 135° to 405° leaves the bottom open.
-        draw.arc(circle, start=135, end=405, fill=(255, 255, 255, 155), width=4)
+        draw.arc(circle, start=135, end=405, fill=(255, 255, 255, 155), width=6 * scale)
         if value is not None and value > 0:
             progress_end = 135 + 270 * min(value, 100) / 100
-            draw.arc(circle, start=135, end=progress_end, fill=(*accent_rgb, 255), width=5)
+            draw.arc(circle, start=135, end=progress_end, fill=(*accent_rgb, 255), width=7 * scale)
+    overlay = overlay.resize(image.size, Image.Resampling.LANCZOS)
     return Image.alpha_composite(image.convert("RGBA"), overlay).convert("RGB")
 
 
@@ -142,20 +145,20 @@ def dashboard(accent: str, text_color: str = "#F2F7FA", muted_color: str = "#95A
         cards = ((5, 84, 123, 196), (5, 218, 123, 330), (5, 352, 123, 464))
         image = _gauge_cards(image, cards, (cpu, gpu_usage, memory), accent)
         d = ImageDraw.Draw(image)
-        value_font = font(34, True)
+        value_font = font(30, True)
         _centered_text(d, now.strftime("%I:%M").lstrip("0"), 20, value_font, text_color, 8, w - 8)
         for (left, top, right, _), (label, value) in zip(cards, readings):
-            _centered_text(d, label, top + 24, font(16, True), "#FFFFFF", left + 5, right - 5)
+            _centered_text(d, label, top + 24, font(14, True), "#FFFFFF", left + 5, right - 5)
             _centered_text(d, f"{value:0.0f}%" if value is not None else "N/A", top + 53, value_font, text_color, left + 5, right - 5)
     else:
         # Four columns fit the clock and three cards, with 8-pixel gaps.
         cards = ((122, 5, 236, 123), (244, 5, 358, 123), (366, 5, 478, 123))
         image = _gauge_cards(image, cards, (cpu, gpu_usage, memory), accent)
         d = ImageDraw.Draw(image)
-        value_font = font(28, True)
+        value_font = font(26, True)
         _centered_text(d, now.strftime("%I:%M").lstrip("0"), 20, value_font, text_color, 5, 115)
         for (left, top, right, _), (label, value) in zip(cards, readings):
-            _centered_text(d, label, top + 24, font(13, True), "#FFFFFF", left + 4, right - 4)
+            _centered_text(d, label, top + 24, font(12, True), "#FFFFFF", left + 4, right - 4)
             _centered_text(d, f"{value:0.0f}%" if value is not None else "N/A", top + 53, value_font, text_color, left + 4, right - 4)
     return _orient(image, rotation)
 

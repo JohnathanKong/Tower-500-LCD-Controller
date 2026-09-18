@@ -1,6 +1,6 @@
 # Tower 500 LCD
 
-A small Windows controller for the Thermaltake Tower 500 3.9-inch LCD (USB `264A:233D`, 480 × 128 pixels). The live dashboard shows the time, CPU Load, GPU Load, and RAM Load. The clock sits near the top with about 20 pixels of space; the date is omitted. Each load reading sits on its own translucent rounded card, separated from the others. A 270° circular gauge wraps the title and percentage, opens at the bottom, and fills according to the load. Load titles are white. Text has a black outline so it remains readable over a background image.
+A small Windows controller for the Thermaltake Tower 500 3.9-inch LCD (USB `264A:233D`, 480 × 128 pixels). The live dashboard shows the time, CPU Load, GPU Load, and RAM Load. The clock sits near the top with about 20 pixels of space; the date is omitted. Each load reading sits on its own translucent rounded card, separated from the others. A thick, antialiased 270° circular gauge wraps the title and percentage, opens at the bottom, and fills according to the load. Load titles are white. Text has a black outline so it remains readable over a background image.
 
 This folder is the application. Keep its files together in a permanent location. It uses the existing Windows HID driver and the open-source USB transport from [Kraken LCD Studio](https://github.com/krakenunbound/kraken-lcd-studio). It does not install a driver or write firmware.
 
