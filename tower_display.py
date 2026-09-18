@@ -9,6 +9,7 @@ import argparse
 import ctypes
 import io
 import json
+import math
 import os
 import sys
 import time
@@ -105,6 +106,21 @@ def _centered_text(draw: ImageDraw.ImageDraw, text: str, y: int, face: ImageFont
     draw.text((x, y), text, font=face, fill=color, stroke_width=2, stroke_fill="black")
 
 
+def _round_arc(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], start: float, end: float, fill: tuple[int, int, int, int], width: int) -> None:
+    """Draw an arc with circular caps at both ends instead of Pillow's flat caps."""
+    draw.arc(box, start=start, end=end, fill=fill, width=width)
+    center_x = (box[0] + box[2]) / 2
+    center_y = (box[1] + box[3]) / 2
+    radius_x = (box[2] - box[0] - width) / 2
+    radius_y = (box[3] - box[1] - width) / 2
+    cap_radius = width / 2
+    for angle in (start, end):
+        radians = math.radians(angle)
+        x = center_x + radius_x * math.cos(radians)
+        y = center_y + radius_y * math.sin(radians)
+        draw.ellipse((round(x - cap_radius), round(y - cap_radius), round(x + cap_radius), round(y + cap_radius)), fill=fill)
+
+
 def _gauge_cards(image: Image.Image, boxes: tuple[tuple[int, int, int, int], ...], values: tuple[float | None, ...], accent: str) -> Image.Image:
     """Put each reading on a separate translucent card with a bottom-open 270° gauge."""
     # Draw at four times the panel resolution, then shrink for smooth arc edges.
@@ -119,10 +135,10 @@ def _gauge_cards(image: Image.Image, boxes: tuple[tuple[int, int, int, int], ...
         radius = min(right - left - 8, bottom - top - 8) / 2
         circle = tuple(round(coordinate * scale) for coordinate in (center_x - radius, center_y - radius, center_x + radius, center_y + radius))
         # Pillow angles run clockwise from the right: 135° to 405° leaves the bottom open.
-        draw.arc(circle, start=135, end=405, fill=(255, 255, 255, 155), width=6 * scale)
+        _round_arc(draw, circle, start=135, end=405, fill=(255, 255, 255, 155), width=6 * scale)
         if value is not None and value > 0:
             progress_end = 135 + 270 * min(value, 100) / 100
-            draw.arc(circle, start=135, end=progress_end, fill=(*accent_rgb, 255), width=7 * scale)
+            _round_arc(draw, circle, start=135, end=progress_end, fill=(*accent_rgb, 255), width=7 * scale)
     overlay = overlay.resize(image.size, Image.Resampling.LANCZOS)
     return Image.alpha_composite(image.convert("RGBA"), overlay).convert("RGB")
 

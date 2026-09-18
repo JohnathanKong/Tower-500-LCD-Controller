@@ -86,7 +86,7 @@ $xaml = @'
         WindowStartupLocation="CenterScreen" Background="#101A24">
   <StackPanel Margin="22">
     <TextBlock Text="Thermaltake 3.9-inch LCD" Foreground="#F2F7FA" FontSize="22" FontWeight="Bold"/>
-    <TextBlock Text="480 × 128  ·  USB 264A:233D" Foreground="#9CB8C7" Margin="0,4,0,16"/>
+    <TextBlock Text="480 &#215; 128  &#183;  USB 264A:233D" Foreground="#9CB8C7" Margin="0,4,0,16"/>
     <TextBlock Text="GPU Load: NVIDIA GPU 0 (RTX 5090)" Foreground="#9CB8C7" Margin="0,-10,0,12"/>
     <Border BorderBrush="#345466" BorderThickness="1">
       <Image Name="Preview" Width="480" Height="128" Stretch="Fill"/>
@@ -96,7 +96,7 @@ $xaml = @'
       <Button Name="Stop" Content="Stop" Padding="10,7" Margin="0,0,8,0"/>
     </WrapPanel>
     <WrapPanel Margin="0,8,0,0">
-      <Button Name="Choose" Content="Import image…" Padding="10,7" Margin="0,0,8,0"/>
+      <Button Name="Choose" Content="Import image&#8230;" Padding="10,7" Margin="0,0,8,0"/>
       <Button Name="Clear" Content="Clear background" Padding="10,7" Margin="0,0,8,0"/>
       <Button Name="Send" Content="Send still image only" Padding="10,7"/>
     </WrapPanel>
@@ -107,10 +107,10 @@ $xaml = @'
     <WrapPanel Margin="0,12,0,0" VerticalAlignment="Center">
       <TextBlock Text="Rotate" Foreground="#F2F7FA" VerticalAlignment="Center" Margin="0,0,8,0"/>
       <ComboBox Name="Rotation" Width="80" SelectedIndex="0" Margin="0,0,16,0">
-        <ComboBoxItem Content="0°" Tag="0"/>
-        <ComboBoxItem Content="90°" Tag="90"/>
-        <ComboBoxItem Content="180°" Tag="180"/>
-        <ComboBoxItem Content="270°" Tag="270"/>
+        <ComboBoxItem Content="0&#176;" Tag="0"/>
+        <ComboBoxItem Content="90&#176;" Tag="90"/>
+        <ComboBoxItem Content="180&#176;" Tag="180"/>
+        <ComboBoxItem Content="270&#176;" Tag="270"/>
       </ComboBox>
       <TextBlock Text="Refresh every" Foreground="#F2F7FA" VerticalAlignment="Center"/>
       <TextBox Name="Interval" Text="2" Width="36" Margin="8,0,5,0" VerticalContentAlignment="Center"/>
@@ -130,8 +130,8 @@ $xaml = @'
     </WrapPanel>
     <TextBlock Text="Dims the image; the LCD backlight stays on." Foreground="#9CB8C7" FontSize="11" Margin="0,3,0,0"/>
     <WrapPanel Margin="0,12,0,0">
-      <Button Name="AccentColor" Content="Accent color…" Padding="8,5" Margin="0,0,8,0"/>
-      <Button Name="TextColor" Content="Main text color…" Padding="8,5"/>
+      <Button Name="AccentColor" Content="Accent color&#8230;" Padding="8,5" Margin="0,0,8,0"/>
+      <Button Name="TextColor" Content="Main text color&#8230;" Padding="8,5"/>
     </WrapPanel>
     <TextBlock Name="Status" Foreground="#28DEBB" Margin="0,16,0,0"/>
   </StackPanel>
