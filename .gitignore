@@ -17,3 +17,9 @@ Desktop.ini
 
 # Optional local environment
 .venv/
+.venv-build/
+.build-tools/
+.build-dist/
+.build-work/
+.build-spec/
+.wheel-cache/

@@ -1,12 +1,8 @@
 param([switch]$DryRun)
 
 . (Join-Path $PSScriptRoot 'AppState.ps1')
-# The small display executable is a renamed Python interpreter.
-$runtime = 'C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python'
-$env:PYTHONHOME = $runtime
-$env:PATH = "$runtime;$env:PATH"
-$python = Join-Path $appDir 'TowerLCDDisplay.exe'
-$driver = Join-Path $appDir 'tower_display.py'
+# The bundled executable carries Python and its required libraries.
+$python = Join-Path $appDir 'bundle\TowerLCDDisplay.exe'
 if (-not (Test-Path -LiteralPath $python)) { exit 1 }
 
 $thermaltake = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match '^(TTRGBPlus|TT RGB Plus)' } | Select-Object -First 1
@@ -24,7 +20,7 @@ $fit = if ($settings.fit -eq 'contain') { 'contain' } else { 'cover' }
 $interval = if ($settings.interval -ge 0.5) { [double]$settings.interval } else { 2 }
 $brightness = if ($null -ne $settings.brightness -and [double]$settings.brightness -ge 0 -and [double]$settings.brightness -le 100) { [int]$settings.brightness } else { 100 }
 
-$arguments = @($driver, '--accent', $accent, '--text-color', $textColor, '--muted-color', $mutedColor, '--rotation', "$rotation", '--interval', "$interval", '--brightness', "$brightness", '--settings-file', ('"{0}"' -f $settingsFile))
+$arguments = @('--accent', $accent, '--text-color', $textColor, '--muted-color', $mutedColor, '--rotation', "$rotation", '--interval', "$interval", '--brightness', "$brightness", '--settings-file', ('"{0}"' -f $settingsFile))
 $imagePath = if ($settings.image -and [IO.Path]::IsPathRooted([string]$settings.image)) { [string]$settings.image } elseif ($settings.image) { Join-Path $dataDir ([string]$settings.image) } else { $null }
 if ($imagePath -and -not (Test-Path -LiteralPath $imagePath -PathType Leaf) -and $settings.image -and -not [IO.Path]::IsPathRooted([string]$settings.image)) { $imagePath = Join-Path $appDir ([string]$settings.image) }
 if ($imagePath -and (Test-Path -LiteralPath $imagePath -PathType Leaf)) {

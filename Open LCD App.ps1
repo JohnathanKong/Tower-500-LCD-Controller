@@ -2,12 +2,7 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 
 . (Join-Path $PSScriptRoot 'AppState.ps1')
-# The renamed executable still loads Python's standard library from this runtime.
-$runtime = 'C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python'
-$env:PYTHONHOME = $runtime
-$env:PATH = "$runtime;$env:PATH"
-$python = Join-Path $appDir 'TowerLCDDisplay.exe'
-$script = Join-Path $appDir 'tower_display.py'
+$python = Join-Path $appDir 'bundle\TowerLCDDisplay.exe'
 
 function Import-Image([string]$source) {
     # Store a content-named copy so deleting the original never breaks the LCD.
@@ -214,9 +209,9 @@ function Show-Preview {
     $degrees = Get-Rotation
     if ($selectedImage) {
         $path = Join-Path $dataDir 'selected-preview.png'
-        & $python $script --background $selectedImage --accent $accent --text-color $textColor --muted-color $mutedColor --rotation $degrees --fit (Get-Fit) --brightness ([int]$brightness.Value) --preview $path | Out-Null
+        & $python --background $selectedImage --accent $accent --text-color $textColor --muted-color $mutedColor --rotation $degrees --fit (Get-Fit) --brightness ([int]$brightness.Value) --preview $path | Out-Null
     } else {
-        & $python $script --accent $accent --text-color $textColor --muted-color $mutedColor --rotation $degrees --brightness ([int]$brightness.Value) --preview $path | Out-Null
+        & $python --accent $accent --text-color $textColor --muted-color $mutedColor --rotation $degrees --brightness ([int]$brightness.Value) --preview $path | Out-Null
     }
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $path)) {
         $status.Text = 'Preview could not be updated. Check the selected image.'
@@ -243,7 +238,7 @@ $window.FindName('Start').Add_Click({
         return
     }
     if (-not (Stop-Dashboard)) { return }
-    $arguments = @($script, '--accent', $accent, '--text-color', $textColor, '--muted-color', $mutedColor, '--rotation', "$(Get-Rotation)", '--interval', "$seconds", '--brightness', "$([int]$brightness.Value)", '--settings-file', ('"{0}"' -f $settingsFile))
+    $arguments = @('--accent', $accent, '--text-color', $textColor, '--muted-color', $mutedColor, '--rotation', "$(Get-Rotation)", '--interval', "$seconds", '--brightness', "$([int]$brightness.Value)", '--settings-file', ('"{0}"' -f $settingsFile))
     if ($selectedImage) { $arguments += @('--background', ('"{0}"' -f $selectedImage), '--fit', (Get-Fit)) }
     # The worker must not inherit the control window's output pipes.
     $process = Start-Process -FilePath $python -ArgumentList $arguments -WorkingDirectory $appDir -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $dataDir 'dashboard.log') -RedirectStandardError (Join-Path $dataDir 'dashboard-error.log')
@@ -289,7 +284,7 @@ $window.FindName('Send').Add_Click({
         return
     }
     if (-not (Stop-Dashboard)) { return }
-    $result = & $python $script --image $selectedImage --rotation (Get-Rotation) --fit (Get-Fit) --brightness ([int]$brightness.Value) 2>&1
+    $result = & $python --image $selectedImage --rotation (Get-Rotation) --fit (Get-Fit) --brightness ([int]$brightness.Value) 2>&1
     if ($LASTEXITCODE -eq 0) { $status.Text = 'Still image sent without text; live dashboard stopped.' }
     else { [System.Windows.MessageBox]::Show(($result | Out-String)) | Out-Null }
 })
