@@ -2,7 +2,7 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 
 . (Join-Path $PSScriptRoot 'AppState.ps1')
-$python = Join-Path $appDir 'bundle\TowerLCDDisplay.exe'
+$python = Join-Path $appDir 'bundle\Tower500LcdProcess.exe'
 
 function Import-Image([string]$source) {
     # Store a content-named copy so deleting the original never breaks the LCD.
@@ -46,7 +46,7 @@ try {
             }
         } catch { }
     }
-    Get-Process -Name powershell,pwsh -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $PID -and $_.MainWindowTitle -eq 'Tower 500 LCD' } | ForEach-Object {
+    Get-Process -Name powershell,pwsh -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $PID -and $_.MainWindowTitle -in @('Tower500Lcd', 'Tower 500 LCD') } | ForEach-Object {
         try { $_.Kill(); $_.WaitForExit(3000) | Out-Null } catch { }
     }
     $self = Get-Process -Id $PID
@@ -73,7 +73,7 @@ if ($savedSettings) {
 
 $xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Tower 500 LCD" Width="540" Height="605" ResizeMode="NoResize"
+        Title="Tower500Lcd" Width="540" Height="605" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen" Background="#101A24">
   <StackPanel Margin="22">
     <TextBlock Text="Thermaltake 3.9-inch LCD" Foreground="#F2F7FA" FontSize="22" FontWeight="Bold"/>
@@ -175,17 +175,17 @@ function Get-DashboardProcess {
         try {
             $record = Get-Content -LiteralPath $pidFile -Raw | ConvertFrom-Json
             $process = Get-Process -Id ([int]$record.pid) -ErrorAction Stop
-            if ($process.ProcessName -eq 'TowerLCDDisplay' -and $process.StartTime.ToUniversalTime().Ticks -eq [long]$record.startUtcTicks) { return $process }
+            if ($process.ProcessName -in @('Tower500LcdProcess', 'TowerLCDDisplay') -and $process.StartTime.ToUniversalTime().Ticks -eq [long]$record.startUtcTicks) { return $process }
         } catch { }
     }
     # A sign-in launch can replace the worker while this window stays open.
-    return Get-Process -Name TowerLCDDisplay -ErrorAction SilentlyContinue | Select-Object -First 1
+    return Get-Process -Name Tower500LcdProcess,TowerLCDDisplay -ErrorAction SilentlyContinue | Select-Object -First 1
 }
 
 function Stop-Dashboard {
     # Stop every copy of this app, including one from a previous install path.
     try {
-        $workers = @(Get-Process -Name TowerLCDDisplay -ErrorAction SilentlyContinue)
+        $workers = @(Get-Process -Name Tower500LcdProcess,TowerLCDDisplay -ErrorAction SilentlyContinue)
         foreach ($process in $workers) {
             $process.Kill()
             $process.WaitForExit(3000) | Out-Null
@@ -197,7 +197,7 @@ function Stop-Dashboard {
     } catch {
         $message = $_.Exception.Message
         $status.Text = 'Could not stop the dashboard.'
-        [System.Windows.MessageBox]::Show("Could not stop the dashboard.`n$message", 'Tower 500 LCD') | Out-Null
+        [System.Windows.MessageBox]::Show("Could not stop the dashboard.`n$message", 'Tower500Lcd') | Out-Null
         return $false
     }
 }
@@ -262,7 +262,7 @@ $window.FindName('Choose').Add_Click({
     $dialog.Filter = 'Images|*.png;*.jpg;*.jpeg;*.bmp;*.webp|All files|*.*'
     if ($dialog.ShowDialog($window)) {
         try { $script:selectedImage = Import-Image $dialog.FileName } catch {
-            [System.Windows.MessageBox]::Show("Image could not be imported: $($_.Exception.Message)", 'Tower 500 LCD') | Out-Null
+            [System.Windows.MessageBox]::Show("Image could not be imported: $($_.Exception.Message)", 'Tower500Lcd') | Out-Null
             return
         }
         Refresh-Library

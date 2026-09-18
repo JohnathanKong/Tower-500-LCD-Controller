@@ -2,7 +2,7 @@ param([switch]$DryRun)
 
 . (Join-Path $PSScriptRoot 'AppState.ps1')
 # The bundled executable carries Python and its required libraries.
-$python = Join-Path $appDir 'bundle\TowerLCDDisplay.exe'
+$python = Join-Path $appDir 'bundle\Tower500LcdProcess.exe'
 if (-not (Test-Path -LiteralPath $python)) { exit 1 }
 
 $thermaltake = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match '^(TTRGBPlus|TT RGB Plus)' } | Select-Object -First 1
@@ -31,7 +31,7 @@ if ($DryRun) { Write-Output ($arguments -join ' '); exit 0 }
 $launchMutex = [Threading.Mutex]::new($false, 'Local\Tower500LCD_WorkerLaunch')
 $launchMutex.WaitOne() | Out-Null
 try {
-    foreach ($existing in @(Get-Process -Name TowerLCDDisplay -ErrorAction SilentlyContinue)) {
+    foreach ($existing in @(Get-Process -Name Tower500LcdProcess,TowerLCDDisplay -ErrorAction SilentlyContinue)) {
         $existing.Kill()
         $existing.WaitForExit(3000) | Out-Null
         if (-not $existing.HasExited) { throw "Could not stop old display process $($existing.Id)" }

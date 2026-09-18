@@ -24,14 +24,14 @@ if ($installDir.Equals($projectDir, $comparison) -or
 }
 
 $files = @(
-    'Open LCD App.cmd', 'Open LCD App.ps1',
+    'Tower500Lcd.cmd', 'Tower500Lcd.ps1',
     'Start LCD at Login.cmd', 'Start LCD at Login.ps1',
     'Start Dashboard.ps1', 'AppState.ps1', 'README.md',
     'LICENSE-Kraken.txt', 'LICENSE-Pillow.txt', 'LICENSE-psutil.txt',
     'LICENSE-PyInstaller.txt', 'LICENSE-Python.txt', 'LICENSE-pywinusb.txt'
 )
 $bundle = Join-Path $projectDir 'bundle'
-if (-not (Test-Path -LiteralPath (Join-Path $bundle 'TowerLCDDisplay.exe') -PathType Leaf) -or
+if (-not (Test-Path -LiteralPath (Join-Path $bundle 'Tower500LcdProcess.exe') -PathType Leaf) -or
     -not (Test-Path -LiteralPath (Join-Path $bundle '_internal') -PathType Container)) {
     throw 'The standalone bundle is missing. Build it before creating an install folder.'
 }

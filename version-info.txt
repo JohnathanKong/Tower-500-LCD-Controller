@@ -12,11 +12,11 @@ VSVersionInfo(
   kids=[
     StringFileInfo([
       StringTable('040904b0', [
-        StringStruct('FileDescription', 'Tower 500 LCD'),
-        StringStruct('ProductName', 'Tower 500 LCD'),
+        StringStruct('FileDescription', 'Tower500LcdProcess'),
+        StringStruct('ProductName', 'Tower500Lcd'),
         StringStruct('FileVersion', '1.0.0'),
         StringStruct('ProductVersion', '1.0.0'),
-        StringStruct('OriginalFilename', 'TowerLCDDisplay.exe')
+        StringStruct('OriginalFilename', 'Tower500LcdProcess.exe')
       ])
     ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])

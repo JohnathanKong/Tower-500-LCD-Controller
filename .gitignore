@@ -19,6 +19,7 @@ Desktop.ini
 .venv/
 .venv-build/
 .build-tools/
+.build-deps/
 .build-dist/
 .build-work/
 .build-spec/

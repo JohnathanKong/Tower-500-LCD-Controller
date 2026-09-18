@@ -2,12 +2,12 @@
 
 A small Windows controller for the Thermaltake Tower 500 3.9-inch LCD (USB `264A:233D`, 480 × 128 pixels). The live dashboard shows the time and CPU, GPU, and RAM utilization. The clock sits near the top with about 20 pixels of space; the date is omitted. Each reading sits on its own translucent rounded card, separated from the others. A thick, antialiased 270° circular gauge with rounded ends wraps the large CPU, GPU, or RAM title and percentage, opens at the bottom, and fills according to utilization. Titles are white. Text has a black outline so it remains readable over a background image.
 
-The runnable app is the small folder created by `Create Install Folder.ps1`. Keep its files together, especially `bundle\TowerLCDDisplay.exe` and the entire `bundle\_internal` directory. The bundled executable includes Python and the libraries it needs; **running the app does not require Python or Codex to be installed**. It uses the existing Windows HID driver and the open-source USB transport from [Kraken LCD Studio](https://github.com/krakenunbound/kraken-lcd-studio). It does not install a driver or write firmware.
+The runnable app is the small folder created by `Create Install Folder.ps1`. Keep its files together, especially `bundle\Tower500LcdProcess.exe` and the entire `bundle\_internal` directory. The bundled executable includes Python and the libraries it needs; **running the app does not require Python or Codex to be installed**. It uses the existing Windows HID driver and the open-source USB transport from [Kraken LCD Studio](https://github.com/krakenunbound/kraken-lcd-studio). It does not install a driver or write firmware.
 
 ## Requirements on this computer
 
 - Windows and the connected Thermaltake panel with USB ID `264A:233D`.
-- The included `bundle\TowerLCDDisplay.exe` and `bundle\_internal` directory. They contain the Python runtime, Pillow, psutil, pywinusb, and the display code. Keep the complete bundle together. Windows PowerShell, used for the control window and launchers, is built into Windows.
+- The included `bundle\Tower500LcdProcess.exe` and `bundle\_internal` directory. They contain the Python runtime, Pillow, psutil, pywinusb, and the display code. Keep the complete bundle together. Windows PowerShell, used for the control window and launchers, is built into Windows.
 - NVIDIA's installed driver and `nvml.dll` for GPU Load. This computer has an NVIDIA GeForce RTX 5090 and AMD Radeon(TM) Graphics. The dashboard reads **NVIDIA GPU 0, the RTX 5090**, through NVML; it does not read the AMD GPU. Other monitor apps may report the AMD GPU or use different sampling and aggregation, so percentages can differ. If the NVIDIA driver cannot report utilization, the display shows `N/A`.
 - TT RGB Plus closed while this controller uses the LCD. Both programs cannot control the panel at once.
 
@@ -30,7 +30,7 @@ The destination must be new or empty; the script will not delete or mix with exi
 ## First run
 
 1. Close TT RGB Plus, including its tray/background process.
-2. Double-click **`Open LCD App.cmd`** in this folder. This opens the control window; it is not the background display process.
+2. Double-click **`Tower500Lcd.cmd`** in this folder. This opens the control window; it is not the background display process.
 3. Click **Import image…** to copy a PNG, JPEG, BMP, or WebP into `%LOCALAPPDATA%\Tower500LCD\images`. Pick any imported image from the **Image library** dropdown. The saved selection uses the local copy, so deleting the original file will not break the dashboard. Live text is drawn over it on every refresh. The preview updates when you change the selection or settings and refreshes every two seconds while open; it does not access the LCD.
 4. Set **Rotate** to match the physical panel direction. Rotation is clockwise: 0°, 90°, 180°, or 270°. Set **Image fit** to crop the image to fill the screen or show the whole image with bars.
 5. Optionally change the accent and main value text colors, refresh interval, and **Brightness** slider. Load titles stay white. The minimum refresh interval is 0.5 seconds; the default is 2 seconds. Brightness ranges from 0% (black image) to 100% (full image). It dims the transmitted pixels, not the LCD backlight, so 0% may still have backlight glow.
@@ -49,9 +49,9 @@ First complete **First run** so the saved settings have the image, rotation, col
 3. Move **the shortcut** into the Startup folder. Keep the `.cmd` file and the rest of this application in their current folder. The shortcut target should point to this folder's `Start LCD at Login.cmd`.
 4. Double-click the shortcut once to check it. If the dashboard is already running, the launcher replaces it. At your next sign-in, Windows runs the same launcher automatically.
 
-The launcher briefly runs PowerShell, reads `lcd-settings.json`, stops any older display process from this app folder, starts one hidden `TowerLCDDisplay.exe` process, and exits. Running the launcher again replaces the old process; it will not leave two dashboards fighting for the USB panel. Opening the control window again also replaces its previous window. If TT RGB Plus is already running, the launcher stops this app's old process and skips starting a new one. No Startup shortcut is installed automatically. To disable automatic startup, delete the shortcut from the Startup folder.
+The launcher briefly runs PowerShell, reads `lcd-settings.json`, stops any older display process from this app folder, starts one hidden `Tower500LcdProcess.exe` process, and exits. Running the launcher again replaces the old process; it will not leave two dashboards fighting for the USB panel. Opening the control window again also replaces its previous window. If TT RGB Plus is already running, the launcher stops this app's old process and skips starting a new one. No Startup shortcut is installed automatically. To disable automatic startup, delete the shortcut from the Startup folder.
 
-**Moving to Program Files:** create the install folder above, then copy its contents to `C:\Program Files\Tower500LCD` (Windows may ask for administrator approval). Launch `Open LCD App.cmd` from the new location once, then replace the old Startup shortcut with a shortcut to the new `Start LCD at Login.cmd`. Settings, imported images, previews, PID records, and logs stay in `%LOCALAPPDATA%\Tower500LCD`, so normal use does not need administrator rights. The `bundle` directory must move with the launchers. No Codex path or separate Python install is needed.
+**Moving to Program Files:** create the install folder above, then copy its contents to `C:\Program Files\Tower500LCD` (Windows may ask for administrator approval). Launch `Tower500Lcd.cmd` from the new location once, then replace the old Startup shortcut with a shortcut to the new `Start LCD at Login.cmd`. Settings, imported images, previews, PID records, and logs stay in `%LOCALAPPDATA%\Tower500LCD`, so normal use does not need administrator rights. The `bundle` directory must move with the launchers. No Codex path or separate Python install is needed.
 
 ## Run from PowerShell
 
@@ -89,11 +89,11 @@ To dim the whole transmitted image to 50% from PowerShell:
 
 ## How it runs and what to check
 
-`bundle\TowerLCDDisplay.exe` is a compiled launcher containing the Python program, interpreter, and libraries. The display logic is still written in Python. Task Manager should show **Tower 500 LCD** under Processes and `TowerLCDDisplay.exe` under Details. `%LOCALAPPDATA%\Tower500LCD\dashboard.pid` records the current background process. The launcher finds and replaces workers by this app's executable name, including a copy running from an older install path, so a stale PID record cannot cause a duplicate. `control.pid` helps a newly opened control window replace the previous window.
+`Tower500Lcd.cmd` opens the main control window titled **Tower500Lcd**. `bundle\Tower500LcdProcess.exe` is the background display program containing the Python interpreter and libraries; Task Manager should show **Tower500LcdProcess** under Processes and `Tower500LcdProcess.exe` under Details. The display logic is still written in Python. `%LOCALAPPDATA%\Tower500LCD\dashboard.pid` records the current background process. The launcher replaces workers under either the current or previous executable name, including a copy running from an older install path, so a stale PID record cannot cause a duplicate. `control.pid` helps a newly opened control window replace the previous window.
 
 The project has its own Git repository and `.gitignore`. Source, launchers, the standalone bundle, licenses, README, and initial images in the app folder are tracked. Personal settings and later imported images live under `%LOCALAPPDATA%\Tower500LCD` and are not in Git. After cloning the repository to another Windows computer, no Python setup is needed to run the included build; choose an image again.
 
-If the screen does not update, check that TT RGB Plus is closed, the USB cable is connected, and `TowerLCDDisplay.exe` appears in Task Manager. Open the control window and click **Start live dashboard**. If startup fails, see `dashboard-error.log` and `dashboard.log` in `%LOCALAPPDATA%\Tower500LCD`. If the window fails to open, run `Open LCD App.ps1` from PowerShell to see its error. The panel can keep its last frame when no process is running; that alone does not mean the dashboard is active.
+If the screen does not update, check that TT RGB Plus is closed, the USB cable is connected, and `Tower500LcdProcess.exe` appears in Task Manager. Open the control window and click **Start live dashboard**. If startup fails, see `dashboard-error.log` and `dashboard.log` in `%LOCALAPPDATA%\Tower500LCD`. If the window fails to open, run `Tower500Lcd.ps1` from PowerShell to see its error. The panel can keep its last frame when no process is running; that alone does not mean the dashboard is active.
 
 On this computer, the standalone background process measured about **46 MB working memory** and **34 MB private memory** during the live test at a two-second refresh interval. The PowerShell control window used about **173 MB RAM while open** in an earlier test; closing it leaves only the smaller display process. Actual use varies with image and settings. The standalone files use about **30 MB on disk**.
 
@@ -101,11 +101,11 @@ On this computer, the standalone background process measured about **46 MB worki
 
 | File | What it does |
 | --- | --- |
-| `Open LCD App.cmd` | **Double-click this** to open the control window. The window can close while the display keeps running. |
+| `Tower500Lcd.cmd` | **Double-click this** to open the control window. The window can close while the display keeps running. |
 | `Start LCD at Login.cmd` | Make a shortcut to this in the Windows Startup folder. It starts one hidden display process using saved settings, then exits. |
 | `Start Dashboard.ps1` | Optional manual command-line launcher. It stays in your PowerShell window until you stop it. |
-| `bundle\TowerLCDDisplay.exe` | The actual display program. The launchers call it; you normally do not open it directly. |
-| `Open LCD App.ps1`, `Start LCD at Login.ps1` | PowerShell code behind the two `.cmd` launchers. Keep these beside the `.cmd` files. |
+| `bundle\Tower500LcdProcess.exe` | The actual display program. The launchers call it; you normally do not open it directly. |
+| `Tower500Lcd.ps1`, `Start LCD at Login.ps1` | PowerShell code behind the two `.cmd` launchers. Keep these beside the `.cmd` files. |
 | `AppState.ps1` | Helper that keeps changing files in `%LOCALAPPDATA%\Tower500LCD`. Keep it with the launchers; do not run it directly. |
 | `bundle\_internal` | Private runtime and libraries required by the executable. Keep the complete directory; do not run files in it directly. |
 
@@ -120,10 +120,10 @@ The Git project also contains `tower_display.py` (dashboard logic), `thermaltake
 Running the app needs no build tools. To rebuild the bundled executable after changing Python code, use **Python 3.12 on Windows**. From this folder, install the pinned build tools and run the build script:
 
 ```powershell
-python -m pip install --no-deps --target .build-tools -r requirements-build.txt
+python -m pip install --no-deps --target .build-deps -r requirements-build.txt
 & '.\Build Standalone.ps1' -PythonExe 'C:\path\to\python.exe'
 ```
 
-The script creates `.build-dist\TowerLCDDisplay`. Stop the running display before replacing `bundle\TowerLCDDisplay.exe` and `bundle\_internal` with the newly built pair. Test a preview with `& '.\Start Dashboard.ps1' --preview '.\preview.png'`, then start the live dashboard. The build tools and intermediate output are ignored by Git; the completed `bundle` is tracked.
+The script creates `.build-dist\Tower500LcdProcess`. Stop the running display before replacing `bundle\Tower500LcdProcess.exe` and `bundle\_internal` with the newly built pair. Test a preview with `& '.\Start Dashboard.ps1' --preview '.\preview.png'`, then start the live dashboard. The build tools and intermediate output are ignored by Git; the completed `bundle` is tracked.
 
 For video, GIFs, profiles, and other advanced controls, see [Kraken LCD Studio](https://github.com/krakenunbound/kraken-lcd-studio).

@@ -81,13 +81,13 @@ def thermaltake_running() -> bool:
 
 def replace_older_instances() -> None:
     """A newly launched display owns the panel; stop older copies of this app."""
-    executable_name = os.path.basename(sys.executable).lower()
+    executable_names = {os.path.basename(sys.executable).lower(), "towerlcddisplay.exe"}
     for process in psutil.process_iter(["pid", "name"]):
         try:
             if process.pid == os.getpid():
                 continue
             # Match the app executable name across an old and a new install path.
-            if (process.info["name"] or "").lower() == executable_name:
+            if (process.info["name"] or "").lower() in executable_names:
                 process.kill()
                 process.wait(timeout=3)
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
