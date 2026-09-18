@@ -18,7 +18,13 @@ function Import-Image([string]$source) {
     # Store a content-named copy so deleting the original never breaks the LCD.
     $sourcePath = (Resolve-Path -LiteralPath $source -ErrorAction Stop).Path
     if ([IO.Path]::GetDirectoryName($sourcePath) -eq $libraryDir) { return $sourcePath }
-    $hash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash.Substring(0, 10)
+    $fullHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
+    foreach ($existing in (Get-ChildItem -LiteralPath $libraryDir -File)) {
+        if ((Get-FileHash -LiteralPath $existing.FullName -Algorithm SHA256).Hash -eq $fullHash) {
+            return $existing.FullName
+        }
+    }
+    $hash = $fullHash.Substring(0, 10)
     $stem = [IO.Path]::GetFileNameWithoutExtension($sourcePath)
     if ($stem.Length -gt 48) { $stem = $stem.Substring(0, 48) }
     $extension = [IO.Path]::GetExtension($sourcePath).ToLowerInvariant()
@@ -174,13 +180,15 @@ function Refresh-Library {
 
 function Get-DashboardProcess {
     # A PID can be reused by Windows, so require both the process name and start time.
-    if (-not (Test-Path -LiteralPath $pidFile)) { return $null }
-    try {
-        $record = Get-Content -LiteralPath $pidFile -Raw | ConvertFrom-Json
-        $process = Get-Process -Id ([int]$record.pid) -ErrorAction Stop
-        if ($process.ProcessName -eq 'TowerLCDDisplay' -and $process.StartTime.ToUniversalTime().Ticks -eq [long]$record.startUtcTicks) { return $process }
-    } catch { return $null }
-    return $null
+    if (Test-Path -LiteralPath $pidFile) {
+        try {
+            $record = Get-Content -LiteralPath $pidFile -Raw | ConvertFrom-Json
+            $process = Get-Process -Id ([int]$record.pid) -ErrorAction Stop
+            if ($process.ProcessName -eq 'TowerLCDDisplay' -and $process.Path -eq $python -and $process.StartTime.ToUniversalTime().Ticks -eq [long]$record.startUtcTicks) { return $process }
+        } catch { }
+    }
+    # A sign-in launch can replace the worker while this window stays open.
+    return Get-Process -Name TowerLCDDisplay -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $python } | Select-Object -First 1
 }
 
 function Stop-Dashboard {
