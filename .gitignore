@@ -1,0 +1,19 @@
+# Runtime state and local preferences
+*.log
+*.pid
+lcd-settings.json
+preview.png
+selected-preview.png
+background-overlay-preview.png
+*-preview.png
+
+# Python and Windows caches
+__pycache__/
+*.pyc
+*.pyo
+psutil-*.dist-info/
+Thumbs.db
+Desktop.ini
+
+# Optional local environment
+.venv/
