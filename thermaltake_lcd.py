@@ -48,12 +48,27 @@ class HidChannel:
     def __init__(self, device: hid.HidDevice, payload_size: int):
         self.device = device
         self.payload_size = payload_size
-        self.received: queue.Queue[list[int]] = queue.Queue()
+        # The device also replies to periodic heartbeats. Keep idle replies bounded.
+        self.received: queue.Queue[list[int]] = queue.Queue(maxsize=32)
         self.report = None
+
+    def _on_report(self, report: list[int]) -> None:
+        try:
+            self.received.put_nowait(report)
+        except queue.Full:
+            # Old unsolicited replies are less useful than the newest reply.
+            try:
+                self.received.get_nowait()
+            except queue.Empty:
+                pass
+            try:
+                self.received.put_nowait(report)
+            except queue.Full:
+                pass
 
     def open(self) -> None:
         self.device.open()
-        self.device.set_raw_data_handler(self.received.put)
+        self.device.set_raw_data_handler(self._on_report)
         reports = self.device.find_output_reports()
         if len(reports) != 1:
             raise LcdError(

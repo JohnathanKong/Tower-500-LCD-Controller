@@ -1,18 +1,13 @@
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 
-$appDir = $PSScriptRoot
+. (Join-Path $PSScriptRoot 'AppState.ps1')
 # The renamed executable still loads Python's standard library from this runtime.
 $runtime = 'C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\python'
 $env:PYTHONHOME = $runtime
 $env:PATH = "$runtime;$env:PATH"
 $python = Join-Path $appDir 'TowerLCDDisplay.exe'
 $script = Join-Path $appDir 'tower_display.py'
-$pidFile = Join-Path $appDir 'dashboard.pid'
-$uiPidFile = Join-Path $appDir 'control.pid'
-$settingsFile = Join-Path $appDir 'lcd-settings.json'
-$libraryDir = Join-Path $appDir 'images'
-New-Item -ItemType Directory -Path $libraryDir -Force | Out-Null
 
 function Import-Image([string]$source) {
     # Store a content-named copy so deleting the original never breaks the LCD.
@@ -35,7 +30,8 @@ function Import-Image([string]$source) {
 
 function Resolve-SavedImage([string]$saved) {
     if (-not $saved) { return $null }
-    $path = if ([IO.Path]::IsPathRooted($saved)) { $saved } else { Join-Path $appDir $saved }
+    $path = if ([IO.Path]::IsPathRooted($saved)) { $saved } else { Join-Path $dataDir $saved }
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf) -and -not [IO.Path]::IsPathRooted($saved)) { $path = Join-Path $appDir $saved }
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $null }
     return Import-Image $path
 }
@@ -184,17 +180,17 @@ function Get-DashboardProcess {
         try {
             $record = Get-Content -LiteralPath $pidFile -Raw | ConvertFrom-Json
             $process = Get-Process -Id ([int]$record.pid) -ErrorAction Stop
-            if ($process.ProcessName -eq 'TowerLCDDisplay' -and $process.Path -eq $python -and $process.StartTime.ToUniversalTime().Ticks -eq [long]$record.startUtcTicks) { return $process }
+            if ($process.ProcessName -eq 'TowerLCDDisplay' -and $process.StartTime.ToUniversalTime().Ticks -eq [long]$record.startUtcTicks) { return $process }
         } catch { }
     }
     # A sign-in launch can replace the worker while this window stays open.
-    return Get-Process -Name TowerLCDDisplay -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $python } | Select-Object -First 1
+    return Get-Process -Name TowerLCDDisplay -ErrorAction SilentlyContinue | Select-Object -First 1
 }
 
 function Stop-Dashboard {
-    # Stop every worker from this app folder, even if a PID record went stale.
+    # Stop every copy of this app, including one from a previous install path.
     try {
-        $workers = @(Get-Process -Name TowerLCDDisplay -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $python })
+        $workers = @(Get-Process -Name TowerLCDDisplay -ErrorAction SilentlyContinue)
         foreach ($process in $workers) {
             $process.Kill()
             $process.WaitForExit(3000) | Out-Null
@@ -214,10 +210,10 @@ function Stop-Dashboard {
 function Show-Preview {
     # Preview mode writes a PNG and never opens the USB panel. Reload the bytes
     # instead of the URI because WPF otherwise reuses its cached old frame.
-    $path = Join-Path $appDir 'preview.png'
+    $path = Join-Path $dataDir 'preview.png'
     $degrees = Get-Rotation
     if ($selectedImage) {
-        $path = Join-Path $appDir 'selected-preview.png'
+        $path = Join-Path $dataDir 'selected-preview.png'
         & $python $script --background $selectedImage --accent $accent --text-color $textColor --muted-color $mutedColor --rotation $degrees --fit (Get-Fit) --brightness ([int]$brightness.Value) --preview $path | Out-Null
     } else {
         & $python $script --accent $accent --text-color $textColor --muted-color $mutedColor --rotation $degrees --brightness ([int]$brightness.Value) --preview $path | Out-Null
@@ -228,13 +224,14 @@ function Show-Preview {
     }
     $bytes = [System.IO.File]::ReadAllBytes($path)
     $stream = [System.IO.MemoryStream]::new($bytes, $false)
-    $bitmap = [System.Windows.Media.Imaging.BitmapImage]::new()
-    $bitmap.BeginInit()
-    $bitmap.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-    $bitmap.StreamSource = $stream
-    $bitmap.EndInit()
-    $bitmap.Freeze()
-    $stream.Dispose()
+    try {
+        $bitmap = [System.Windows.Media.Imaging.BitmapImage]::new()
+        $bitmap.BeginInit()
+        $bitmap.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+        $bitmap.StreamSource = $stream
+        $bitmap.EndInit()
+        $bitmap.Freeze()
+    } finally { $stream.Dispose() }
     $preview.Source = $bitmap
 }
 
@@ -249,13 +246,13 @@ $window.FindName('Start').Add_Click({
     $arguments = @($script, '--accent', $accent, '--text-color', $textColor, '--muted-color', $mutedColor, '--rotation', "$(Get-Rotation)", '--interval', "$seconds", '--brightness', "$([int]$brightness.Value)", '--settings-file', ('"{0}"' -f $settingsFile))
     if ($selectedImage) { $arguments += @('--background', ('"{0}"' -f $selectedImage), '--fit', (Get-Fit)) }
     # The worker must not inherit the control window's output pipes.
-    $process = Start-Process -FilePath $python -ArgumentList $arguments -WorkingDirectory $appDir -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $appDir 'dashboard.log') -RedirectStandardError (Join-Path $appDir 'dashboard-error.log')
+    $process = Start-Process -FilePath $python -ArgumentList $arguments -WorkingDirectory $appDir -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $dataDir 'dashboard.log') -RedirectStandardError (Join-Path $dataDir 'dashboard-error.log')
     @{ pid = $process.Id; startUtcTicks = $process.StartTime.ToUniversalTime().Ticks } |
         ConvertTo-Json | Set-Content -LiteralPath $pidFile -Encoding UTF8
     Start-Sleep -Milliseconds 800
     if (-not (Get-Process -Id $process.Id -ErrorAction SilentlyContinue)) {
         Remove-Item -LiteralPath $pidFile -ErrorAction SilentlyContinue
-        $errorText = Get-Content -LiteralPath (Join-Path $appDir 'dashboard-error.log') -Tail 5 -ErrorAction SilentlyContinue | Out-String
+        $errorText = Get-Content -LiteralPath (Join-Path $dataDir 'dashboard-error.log') -Tail 5 -ErrorAction SilentlyContinue | Out-String
         [System.Windows.MessageBox]::Show("The dashboard could not start. Close TT RGB Plus and try again.`n$errorText") | Out-Null
         return
     }
@@ -353,6 +350,9 @@ $previewWatch.Interval = [TimeSpan]::FromSeconds(2)
 $previewWatch.Add_Tick({ Show-Preview })
 $previewWatch.Start()
 try { $window.ShowDialog() | Out-Null } finally {
+    $watch.Stop()
+    $previewWatch.Stop()
+    $preview.Source = $null
     try {
         $record = Get-Content -LiteralPath $uiPidFile -Raw | ConvertFrom-Json
         if ([int]$record.pid -eq $PID) { Remove-Item -LiteralPath $uiPidFile -ErrorAction SilentlyContinue }

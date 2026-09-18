@@ -14,6 +14,7 @@ import os
 import sys
 import time
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 
 import psutil
@@ -31,16 +32,21 @@ class GpuMonitor:
     def __init__(self) -> None:
         self.library = None
         self.handle = ctypes.c_void_p()
+        self.initialized = False
         try:
             library = ctypes.WinDLL("nvml.dll")
             library.nvmlInit_v2.restype = ctypes.c_int
+            library.nvmlShutdown.restype = ctypes.c_int
             library.nvmlDeviceGetHandleByIndex_v2.argtypes = [ctypes.c_uint, ctypes.POINTER(ctypes.c_void_p)]
             library.nvmlDeviceGetHandleByIndex_v2.restype = ctypes.c_int
             library.nvmlDeviceGetUtilizationRates.argtypes = [ctypes.c_void_p, ctypes.POINTER(self.Utilization)]
             library.nvmlDeviceGetUtilizationRates.restype = ctypes.c_int
-            if library.nvmlInit_v2() != 0 or library.nvmlDeviceGetHandleByIndex_v2(0, ctypes.byref(self.handle)) != 0:
+            if library.nvmlInit_v2() != 0:
                 return
+            self.initialized = True
             self.library = library
+            if library.nvmlDeviceGetHandleByIndex_v2(0, ctypes.byref(self.handle)) != 0:
+                self.close()
         except (AttributeError, OSError):
             pass
 
@@ -52,6 +58,13 @@ class GpuMonitor:
         if self.library.nvmlDeviceGetUtilizationRates(self.handle, ctypes.byref(rates)) != 0:
             return None
         return float(rates.gpu)
+
+    def close(self) -> None:
+        """Release the NVML session on both normal and error exits."""
+        if self.initialized and self.library is not None:
+            self.library.nvmlShutdown()
+        self.initialized = False
+        self.library = None
 
 
 def thermaltake_running() -> bool:
@@ -68,20 +81,22 @@ def thermaltake_running() -> bool:
 
 def replace_older_instances() -> None:
     """A newly launched display owns the panel; stop older copies of this app."""
-    executable = os.path.normcase(os.path.abspath(sys.executable))
-    for process in psutil.process_iter(["pid", "exe"]):
+    executable_name = os.path.basename(sys.executable).lower()
+    for process in psutil.process_iter(["pid", "name"]):
         try:
             if process.pid == os.getpid():
                 continue
-            other = process.info["exe"]
-            if other and os.path.normcase(os.path.abspath(other)) == executable:
+            # Match the app executable name across an old and a new install path.
+            if (process.info["name"] or "").lower() == executable_name:
                 process.kill()
                 process.wait(timeout=3)
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
             continue
 
 
+@lru_cache(maxsize=8)
 def font(size: int, bold: bool = False):
+    """Reuse the same small set of font objects for every frame."""
     name = "segoeuib.ttf" if bold else "segoeui.ttf"
     try:
         return ImageFont.truetype(f"C:/Windows/Fonts/{name}", size)
@@ -199,9 +214,9 @@ def image_frame(path: Path, rotation: int = 0, fit: str = "cover") -> Image.Imag
 
 def jpeg_bytes(image: Image.Image) -> bytes:
     """The panel transport accepts a JPEG payload for each USB update."""
-    stream = io.BytesIO()
-    image.save(stream, format="JPEG", quality=88, optimize=True, progressive=False, subsampling=0)
-    return stream.getvalue()
+    with io.BytesIO() as stream:
+        image.save(stream, format="JPEG", quality=88, optimize=True, progressive=False, subsampling=0)
+        return stream.getvalue()
 
 
 def dim_frame(image: Image.Image, brightness: int) -> Image.Image:
@@ -251,6 +266,7 @@ def main() -> int:
             ImageColor.getrgb(getattr(args, name))
         except ValueError:
             parser.error(f"--{name.replace('_', '-')} must be a valid color")
+    gpu_monitor = None
     try:
         gpu_monitor = GpuMonitor()
         background = load_background(args.background, args.rotation, args.fit) if args.background else None
@@ -293,6 +309,9 @@ def main() -> int:
     except (LcdError, OSError, ValueError) as exc:
         print(f"LCD error: {exc}", file=sys.stderr)
         return 1
+    finally:
+        if gpu_monitor is not None:
+            gpu_monitor.close()
     return 0
 
 
