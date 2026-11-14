@@ -81,7 +81,7 @@ bool startWorker(const wchar_t* argument) {
         setStatus(L"Missing thermaltake500lcd.service.exe beside this app.");
         return false;
     }
-    std::wstring command = quoted(path);
+    std::wstring command = lcd::quoted(path);
     if (argument && *argument) { command += L" "; command += argument; }
     std::vector<wchar_t> writable(command.begin(), command.end());
     writable.push_back(L'\0');
