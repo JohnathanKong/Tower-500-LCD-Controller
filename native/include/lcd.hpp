@@ -1,7 +1,11 @@
 #pragma once
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
+#include <objidl.h>
 #include <gdiplus.h>
+#include <cstring>
 #include <filesystem>
 #include <memory>
 #include <string>
