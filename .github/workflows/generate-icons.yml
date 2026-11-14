@@ -1,0 +1,35 @@
+name: Generate app icon assets
+on:
+  push:
+    paths:
+      - "assets/*.svg"
+      - ".github/workflows/generate-icons.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SVG and icon tools
+        run: sudo apt-get update && sudo apt-get install -y librsvg2-bin imagemagick
+      - name: Render multiresolution Windows icons
+        shell: bash
+        run: |
+          set -euo pipefail
+          for icon in app service; do
+            rsvg-convert -w 512 -h 512 "assets/${icon}.svg" > "/tmp/${icon}.png"
+            convert "/tmp/${icon}.png" -define icon:auto-resize=256,128,64,48,32,16 "assets/${icon}.ico"
+            identify "assets/${icon}.ico"
+          done
+      - name: Commit generated .ico files
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/app.ico assets/service.ico
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate Windows icon resources from SVG artwork"
+            git push origin HEAD:master
+          fi
