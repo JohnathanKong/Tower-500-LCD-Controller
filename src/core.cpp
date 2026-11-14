@@ -1,8 +1,10 @@
 #include "lcd.hpp"
 
 #include <commctrl.h>
+extern "C" {
 #include <hidsdi.h>
 #include <hidpi.h>
+}
 #include <setupapi.h>
 #include <tlhelp32.h>
 #include <objidl.h>
