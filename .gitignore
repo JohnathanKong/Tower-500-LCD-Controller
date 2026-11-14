@@ -1,27 +1,26 @@
-# Runtime state and local preferences
-/images/
+# CMake / IDE build outputs
+/build/
+/out/
+/dist/
+/.vs/
+/.vscode/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+*.vcxproj
+*.vcxproj.filters
+*.sln
+*.obj
+*.pdb
+*.ilk
+*.tlog
+
+# Local runtime and editor data
 *.log
 *.pid
-lcd-settings.json
-preview.png
-selected-preview.png
-background-overlay-preview.png
-*-preview.png
-
-# Python and Windows caches
-__pycache__/
-*.pyc
-*.pyo
-psutil-*.dist-info/
+*.user
+*.suo
+*.tmp
+*.bak
+.DS_Store
 Thumbs.db
-Desktop.ini
-
-# Optional local environment
-.venv/
-.venv-build/
-.build-tools/
-.build-deps/
-.build-dist/
-.build-work/
-.build-spec/
-.wheel-cache/

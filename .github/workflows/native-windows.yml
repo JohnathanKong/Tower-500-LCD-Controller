@@ -2,7 +2,12 @@ name: Native C++ Windows build
 on:
   push:
     paths:
-      - "native/**"
+      - "src/**"
+      - "include/**"
+      - "CMakeLists.txt"
+      - "Install.ps1"
+      - "Install.cmd"
+      - "README.md"
       - ".github/workflows/native-windows.yml"
   workflow_dispatch:
 jobs:
@@ -11,20 +16,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure x64
-        run: cmake -S native -B native/build -A x64
+        run: cmake -S . -B build -A x64
       - name: Build Release
-        run: cmake --build native/build --config Release --parallel
-      - name: Assemble portable installation
+        run: cmake --build build --config Release --parallel
+      - name: Assemble installation package
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path native/dist | Out-Null
-          Copy-Item native/build/Release/thermaltake500lcd.exe native/dist/
-          Copy-Item native/build/Release/thermaltake500lcd.service.exe native/dist/
-          Copy-Item native/Install.ps1 native/dist/
-          Copy-Item native/Install.cmd native/dist/
-          Copy-Item native/README.md native/dist/
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item build/Release/thermaltake500lcd.exe dist/
+          Copy-Item build/Release/thermaltake500lcd.service.exe dist/
+          Copy-Item Install.ps1 dist/
+          Copy-Item Install.cmd dist/
+          Copy-Item README.md dist/
+          Copy-Item LICENSE dist/
       - uses: actions/upload-artifact@v4
         with:
           name: Thermaltake500LCD-Windows-x64
-          path: native/dist/
+          path: dist/
           if-no-files-found: error
