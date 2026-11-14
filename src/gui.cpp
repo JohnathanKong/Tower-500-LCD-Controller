@@ -361,7 +361,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int show) {
         cls.lpfnWndProc = wndProc;
         cls.lpszClassName = L"Thermaltake500LCDControl";
         cls.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-        cls.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+        cls.hIcon = LoadIconW(instance, MAKEINTRESOURCEW(1));
+        cls.hIconSm = static_cast<HICON>(LoadImageW(instance, MAKEINTRESOURCEW(1),
+                                                   IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR));
+        if (!cls.hIcon) cls.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
         if (!RegisterClassExW(&cls)) return 1;
         HWND window = CreateWindowExW(0, cls.lpszClassName, L"Thermaltake500LCD",
                                     WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,

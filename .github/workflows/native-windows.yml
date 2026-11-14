@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - "src/**"
+      - "assets/**"
+      - "resources/**"
       - "include/**"
       - "CMakeLists.txt"
       - "Install.ps1"

@@ -2,6 +2,18 @@
 
 Native Windows C++ controller for the Thermaltake Tower 500 3.9-inch USB LCD (480 × 128, USB VID:PID `264A:233D`). **The main branch contains only the C++ implementation.**
 
+## App icons
+
+The GUI and background worker each include a native Windows icon. The shared neon LCD monitor
+design is stored as editable vector artwork in `assets/app.svg` and `assets/service.svg`,
+and the corresponding multiresolution `assets/*.ico` resources are embedded directly
+into both Windows executables at link time. The background worker's icon adds a
+small electric-bolt badge to distinguish it from the GUI.
+
+When the SVG artwork is updated, GitHub Actions regenerates the ICO files.
+Docker cross-build and MSVC build both use the same checked-in ICO resources,
+so neither requires Python or an image converter on your computer.
+
 ## Applications
 
 | Executable | Purpose |
@@ -86,6 +98,12 @@ If your screen keeps turning purple or flickering, close other LCD software and 
 
 ```text
 CMakeLists.txt
+assets/app.svg
+assets/app.ico
+assets/service.svg
+assets/service.ico
+resources/app.rc.in
+resources/service.rc.in
 include/lcd.hpp
 src/core.cpp
 src/gui.cpp
