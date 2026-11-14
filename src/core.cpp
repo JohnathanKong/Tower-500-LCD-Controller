@@ -442,7 +442,7 @@ std::vector<unsigned char> encodeJpeg(Gdiplus::Image& image) {
 }
 void savePng(Gdiplus::Image& image, const fs::path& file) {
     CLSID clsid{};
-    if (!encoderClsid(L"image/png", clsid) || image.Save(file.c_str(), &clsid) != Gdiplus::Ok)
+    if (!encoderClsid(L"image/png", clsid) || image.Save(file.c_str(), &clsid, nullptr) != Gdiplus::Ok)
         throw std::runtime_error("PNG preview could not be saved");
 }
 bool vendorRunning() {
