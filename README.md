@@ -27,6 +27,34 @@ To install to another location or skip the Startup shortcut, use:
 & '.\Install.ps1' -Destination 'D:\Apps\Thermaltake500LCD' -NoStartup
 ```
 
+## Build from Docker (recommended for portable builds)
+
+You can compile both Windows .exe files **without Visual Studio or MinGW installed on your host**. Docker Desktop can run in the normal **Linux containers** mode. The image contains the MinGW-w64 cross-compiler and CMake.
+
+From the repository root, run:
+
+```powershell
+docker compose run --build --rm build
+```
+
+After the build, the Windows installation package appears directly under `dist/`:
+
+```text
+dist/
+├── thermaltake500lcd.exe
+├── thermaltake500lcd.service.exe
+├── Install.cmd
+├── Install.ps1
+├── README.md
+└── LICENSE
+```
+
+The two executables can be run **portably** by keeping them together; no installer is required. `Install.cmd` is optional and configures the Program Files location and startup shortcut.
+
+The cross-compiled executables target Windows x64, not Linux. The Docker container is for **building only** — it cannot interact with the USB LCD. This build uses MinGW-w64 instead of MSVC; GitHub Actions also runs the original Visual Studio build for comparison. Only the Windows computer with the LCD can verify hardware behaviour.
+
+See the Docker cross-build CI status in [Actions](../../actions/workflows/docker-windows.yml).
+
 ## Build from source
 
 Use Windows with Visual Studio 2022 C++ Desktop Build Tools, the Windows SDK, and CMake 3.22+:

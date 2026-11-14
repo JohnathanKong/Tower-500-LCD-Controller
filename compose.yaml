@@ -1,0 +1,9 @@
+services:
+  build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: thermaltake500lcd-builder:mingw64
+    working_dir: /workspace
+    volumes:
+      - .:/workspace

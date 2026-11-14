@@ -24,3 +24,6 @@ cmake_install.cmake
 *.bak
 .DS_Store
 Thumbs.db
+
+# Docker cross-compiler build output
+/dist/

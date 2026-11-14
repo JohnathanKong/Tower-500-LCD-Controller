@@ -19,3 +19,12 @@ add_executable(lcd_worker WIN32 src/service.cpp)
 target_link_libraries(lcd_worker PRIVATE lcd_core)
 set_target_properties(lcd_worker PROPERTIES OUTPUT_NAME "thermaltake500lcd.service")
 install(TARGETS lcd_gui lcd_worker RUNTIME DESTINATION .)
+
+# The Docker toolchain builds PE/COFF Windows executables with MinGW-w64.
+# -municode selects wWinMainCRTStartup for the Unicode Win32 entrypoints.
+# Static linking avoids redistributing libstdc++, libgcc, or winpthreads DLLs.
+if(MINGW)
+    foreach(target IN ITEMS lcd_gui lcd_worker)
+        target_link_options(${target} PRIVATE -municode -static -static-libgcc -static-libstdc++)
+    endforeach()
+endif()
